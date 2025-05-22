@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="hcmute.edu.vn.ocrscannerproject.ui.home.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_homeFragment_to_scanFragment"
+            app:destination="@id/scanFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_reviewFragment"
+            app:destination="@id/reviewFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_documentDetailsFragment"
+            app:destination="@id/documentDetailsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/scanFragment"
+        android:name="hcmute.edu.vn.ocrscannerproject.ui.scan.ScanFragment"
+        android:label="Scan"
+        tools:layout="@layout/fragment_scan">
+        <action
+            android:id="@+id/action_scanFragment_to_reviewFragment"
+            app:destination="@id/reviewFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/documentDetailsFragment"
+        android:name="hcmute.edu.vn.ocrscannerproject.ui.details.DocumentDetailsFragment"
+        android:label="Document Details"
+        tools:layout="@layout/fragment_document_details">
+        <argument
+            android:name="documentId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="hcmute.edu.vn.ocrscannerproject.ui.settings.SettingsFragment"
+        android:label="Settings"
+        tools:layout="@layout/fragment_settings" />
+
+    <fragment
+        android:id="@+id/reviewFragment"
+        android:name="hcmute.edu.vn.ocrscannerproject.ui.review.ReviewFragment"
+        android:label="Review"
+        tools:layout="@layout/fragment_review">
+        <argument
+            android:name="capturedImages"
+            app:argType="string[]" />
+        <action
+            android:id="@+id/action_reviewFragment_to_extractTextFragment"
+            app:destination="@id/extractTextFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/extractTextFragment"
+        android:name="hcmute.edu.vn.ocrscannerproject.ui.extract.ExtractTextFragment"
+        android:label="Extract Text"
+        tools:layout="@layout/fragment_extract_text">
+        <argument
+            android:name="processedImages"
+            app:argType="string[]" />
+        <argument
+            android:name="fileName"
+            app:argType="string" />
+    </fragment>
+
+</navigation> 

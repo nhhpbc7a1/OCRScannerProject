@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "165027145067",
+    "project_id": "ocrscannerproject",
+    "storage_bucket": "ocrscannerproject.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165027145067:android:831c549f585972cea0d82e",
+        "android_client_info": {
+          "package_name": "hcmute.edu.vn.ocrscannerproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-EOyDiJtVO0Vb7shBqaNxMNCSHex5GSY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

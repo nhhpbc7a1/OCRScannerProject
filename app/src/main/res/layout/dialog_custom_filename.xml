@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Prefix"
+        android:textColor="@android:color/black"
+        android:textSize="16sp" />
+
+    <EditText
+        android:id="@+id/et_prefix"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:hint="Enter file name prefix"
+        android:inputType="text"
+        android:text="Scan" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Include components:"
+        android:textColor="@android:color/black"
+        android:textSize="16sp" />
+
+    <CheckBox
+        android:id="@+id/cb_year"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="Year (yyyy)" />
+
+    <CheckBox
+        android:id="@+id/cb_month"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="Month (MM)" />
+
+    <CheckBox
+        android:id="@+id/cb_day"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="Day (dd)" />
+
+    <CheckBox
+        android:id="@+id/cb_hour"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="Hour (HH)" />
+
+    <CheckBox
+        android:id="@+id/cb_minute"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="Minute (mm)" />
+
+    <CheckBox
+        android:id="@+id/cb_second"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="Second (ss)" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Separator:"
+        android:textColor="@android:color/black"
+        android:textSize="16sp" />
+
+    <RadioGroup
+        android:id="@+id/rg_separator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/rb_underscore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="Underscore (_)" />
+
+        <RadioButton
+            android:id="@+id/rb_dash"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dash (-)" />
+
+        <RadioButton
+            android:id="@+id/rb_dot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dot (.)" />
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Preview:"
+        android:textColor="@android:color/black"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/tv_preview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Scan_yyyyMMdd_HHmmss"
+        android:textColor="@android:color/holo_blue_dark"
+        android:textSize="16sp" />
+
+</LinearLayout> 
