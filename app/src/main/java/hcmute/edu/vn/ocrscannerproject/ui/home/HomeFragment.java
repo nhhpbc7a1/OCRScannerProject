@@ -59,7 +59,11 @@ public class HomeFragment extends Fragment implements ScannedDocumentAdapter.OnD
     
     private boolean isGridView = false;
     private List<String> filterOptions = Arrays.asList("All", "PDF", "TXT", "Image", "Excel", "Word");
-    
+    private enum SortType {
+        NAME_ASC, NAME_DESC, DATE_NEWEST, DATE_OLDEST
+    }
+
+    private SortType currentSortType = SortType.DATE_NEWEST;
     private ScannedDocumentRepository documentRepository;
     private ScannedDocumentAdapter documentAdapter;
     private List<ScannedDocument> documents = new ArrayList<>();
@@ -144,7 +148,7 @@ public class HomeFragment extends Fragment implements ScannedDocumentAdapter.OnD
         btnSelect = view.findViewById(R.id.btn_select);
         recyclerDocuments = view.findViewById(R.id.recycler_documents);
     }
-    
+
     private void setupListeners() {
         // Search functionality
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -187,17 +191,57 @@ public class HomeFragment extends Fragment implements ScannedDocumentAdapter.OnD
         
         // Sort button
         btnSort.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Sort functionality", Toast.LENGTH_SHORT).show();
-            // TODO: Implement sorting options
+            // Cycle through sort types
+            switch (currentSortType) {
+                case DATE_NEWEST:
+                    currentSortType = SortType.DATE_OLDEST;
+                    Toast.makeText(requireContext(), "Sort: Oldest first", Toast.LENGTH_SHORT).show();
+                    break;
+                case DATE_OLDEST:
+                    currentSortType = SortType.NAME_ASC;
+                    Toast.makeText(requireContext(), "Sort: Name A-Z", Toast.LENGTH_SHORT).show();
+                    break;
+                case NAME_ASC:
+                    currentSortType = SortType.NAME_DESC;
+                    Toast.makeText(requireContext(), "Sort: Name Z-A", Toast.LENGTH_SHORT).show();
+                    break;
+                case NAME_DESC:
+                    currentSortType = SortType.DATE_NEWEST;
+                    Toast.makeText(requireContext(), "Sort: Newest first", Toast.LENGTH_SHORT).show();
+                    break;
+            }
+            sortDocuments();
         });
-        
+
+
         // Select button
         btnSelect.setOnClickListener(v -> {
             Toast.makeText(requireContext(), "Select functionality", Toast.LENGTH_SHORT).show();
             // TODO: Implement multi-select
         });
     }
-    
+
+    private void sortDocuments() {
+        if (documents == null || documents.isEmpty()) return;
+
+        switch (currentSortType) {
+            case NAME_ASC:
+                documents.sort((d1, d2) -> d1.getFileName().compareToIgnoreCase(d2.getFileName()));
+                break;
+            case NAME_DESC:
+                documents.sort((d1, d2) -> d2.getFileName().compareToIgnoreCase(d1.getFileName()));
+                break;
+            case DATE_NEWEST:
+                documents.sort((d1, d2) -> Long.compare(d2.getCreatedAt(), d1.getCreatedAt()));
+                break;
+            case DATE_OLDEST:
+                documents.sort((d1, d2) -> Long.compare(d1.getCreatedAt(), d2.getCreatedAt()));
+                break;
+        }
+
+        updateUI();
+    }
+
     private void setupFilterSpinner() {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 requireContext(), android.R.layout.simple_spinner_item, filterOptions);
