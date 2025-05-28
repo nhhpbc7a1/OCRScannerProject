@@ -63,7 +63,7 @@ public class HomeFragment extends Fragment implements ScannedDocumentAdapter.OnD
         NAME_ASC, NAME_DESC, DATE_NEWEST, DATE_OLDEST
     }
     private boolean selectMode = false;
-    private SortType currentSortType = SortType.DATE_NEWEST;
+    private SortType currentSortType = SortType.NAME_ASC;
     private ScannedDocumentRepository documentRepository;
     private ScannedDocumentAdapter documentAdapter;
     private List<ScannedDocument> documents = new ArrayList<>();
@@ -205,11 +205,11 @@ public class HomeFragment extends Fragment implements ScannedDocumentAdapter.OnD
     private void sortDocuments() {
         // Cycle through sort types
         switch (currentSortType) {
-            case DATE_NEWEST:
-                currentSortType = SortType.DATE_OLDEST;
-                Toast.makeText(requireContext(), "Sort: Oldest first", Toast.LENGTH_SHORT).show();
-                break;
-            case DATE_OLDEST:
+//            case DATE_NEWEST:
+//                currentSortType = SortType.DATE_OLDEST;
+//                Toast.makeText(requireContext(), "Sort: Oldest first", Toast.LENGTH_SHORT).show();
+//                break;
+            case NAME_DESC:
                 currentSortType = SortType.NAME_ASC;
                 Toast.makeText(requireContext(), "Sort: Name A-Z", Toast.LENGTH_SHORT).show();
                 break;
@@ -217,10 +217,10 @@ public class HomeFragment extends Fragment implements ScannedDocumentAdapter.OnD
                 currentSortType = SortType.NAME_DESC;
                 Toast.makeText(requireContext(), "Sort: Name Z-A", Toast.LENGTH_SHORT).show();
                 break;
-            case NAME_DESC:
-                currentSortType = SortType.DATE_NEWEST;
-                Toast.makeText(requireContext(), "Sort: Newest first", Toast.LENGTH_SHORT).show();
-                break;
+//            case NAME_DESC:
+//                currentSortType = SortType.DATE_NEWEST;
+//                Toast.makeText(requireContext(), "Sort: Newest first", Toast.LENGTH_SHORT).show();
+//                break;
         }
         if (documents == null || documents.isEmpty()) return;
 

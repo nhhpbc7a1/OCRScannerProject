@@ -69,6 +69,13 @@ public class ScannedDocumentAdapter extends RecyclerView.Adapter<ScannedDocument
         // Set document type
         holder.tvType.setText(document.getType());
         holder.chk.setVisibility(showCheckboxes ? View.VISIBLE : View.GONE);
+
+        List<String> imagePaths = document.getLocalImagePaths();
+        if (imagePaths != null && !imagePaths.isEmpty())
+        {
+            // Set image count text
+            holder.tvCount.setText(imagePaths.size() + " image" + (imagePaths.size() > 1 ? "s" : ""));
+        }
         
         // Load thumbnail if available
         if (document.getLocalImagePath() != null && !document.getLocalImagePath().isEmpty()) {
@@ -121,6 +128,7 @@ public class ScannedDocumentAdapter extends RecyclerView.Adapter<ScannedDocument
         TextView tvTitle;
         TextView tvDate;
         TextView tvType;
+        TextView tvCount;
         CheckBox chk;
 
         public DocumentViewHolder(@NonNull View itemView) {
@@ -129,6 +137,7 @@ public class ScannedDocumentAdapter extends RecyclerView.Adapter<ScannedDocument
             tvTitle = itemView.findViewById(R.id.tv_document_title);
             tvDate = itemView.findViewById(R.id.tv_document_date);
             tvType = itemView.findViewById(R.id.tv_document_type);
+            tvCount = itemView.findViewById(R.id.tv_document_count);
             chk = itemView.findViewById(R.id.checkbox_select);
         }
     }

@@ -45,7 +45,7 @@
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:background="@drawable/btn_home"
-            android:drawableTop="@android:drawable/ic_menu_upload"
+            android:drawableTop="@drawable/ic_add_file"
             android:text="Import Files"
             android:textAllCaps="false" />
 
@@ -57,7 +57,7 @@
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:background="@drawable/btn_home"
-            android:drawableTop="@android:drawable/ic_menu_gallery"
+            android:drawableTop="@drawable/ic_add_image"
             android:text="Import Images"
             android:textAllCaps="false" />
 
@@ -68,7 +68,7 @@
             android:layout_marginStart="4dp"
             android:layout_weight="1"
             android:background="@drawable/btn_home"
-            android:drawableTop="@android:drawable/ic_menu_gallery"
+            android:drawableTop="@drawable/ic_add_folder"
             android:text="Create Folder"
             android:textAllCaps="false" />
     </LinearLayout>

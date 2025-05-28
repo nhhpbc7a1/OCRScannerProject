@@ -76,4 +76,4 @@
             tools:text="This is the content of the scanned document, which was extracted using OCR technology. The text here might be from a receipt, business card, document, or any other scanned item." />
     </ScrollView>
 
-</androidx.constraintlayout.widget.ConstraintLayout> 
+</androidx.constraintlayout.widget.ConstraintLayout>

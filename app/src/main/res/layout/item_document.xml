@@ -68,6 +68,20 @@
             app:layout_constraintStart_toEndOf="@+id/img_document_thumbnail"
             app:layout_constraintTop_toBottomOf="@+id/tv_document_date" />
 
+        <TextView
+            android:id="@+id/tv_document_count"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="8dp"
+            android:textColor="@android:color/darker_gray"
+            android:text="10 images"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/tv_document_type"
+            app:layout_constraintTop_toTopOf="@+id/tv_document_type" />
+
         <!-- Checkbox for selection -->
         <CheckBox
             android:id="@+id/checkbox_select"
