@@ -62,7 +62,7 @@ public class HomeFragment extends Fragment implements ScannedDocumentAdapter.OnD
     private enum SortType {
         NAME_ASC, NAME_DESC, DATE_NEWEST, DATE_OLDEST
     }
-
+    private boolean selectMode = false;
     private SortType currentSortType = SortType.DATE_NEWEST;
     private ScannedDocumentRepository documentRepository;
     private ScannedDocumentAdapter documentAdapter;
@@ -191,37 +191,37 @@ public class HomeFragment extends Fragment implements ScannedDocumentAdapter.OnD
         
         // Sort button
         btnSort.setOnClickListener(v -> {
-            // Cycle through sort types
-            switch (currentSortType) {
-                case DATE_NEWEST:
-                    currentSortType = SortType.DATE_OLDEST;
-                    Toast.makeText(requireContext(), "Sort: Oldest first", Toast.LENGTH_SHORT).show();
-                    break;
-                case DATE_OLDEST:
-                    currentSortType = SortType.NAME_ASC;
-                    Toast.makeText(requireContext(), "Sort: Name A-Z", Toast.LENGTH_SHORT).show();
-                    break;
-                case NAME_ASC:
-                    currentSortType = SortType.NAME_DESC;
-                    Toast.makeText(requireContext(), "Sort: Name Z-A", Toast.LENGTH_SHORT).show();
-                    break;
-                case NAME_DESC:
-                    currentSortType = SortType.DATE_NEWEST;
-                    Toast.makeText(requireContext(), "Sort: Newest first", Toast.LENGTH_SHORT).show();
-                    break;
-            }
             sortDocuments();
         });
 
 
         // Select button
         btnSelect.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Select functionality", Toast.LENGTH_SHORT).show();
-            // TODO: Implement multi-select
+            selectMode = !selectMode;
+            documentAdapter.setShowCheckboxes(selectMode);
         });
     }
 
     private void sortDocuments() {
+        // Cycle through sort types
+        switch (currentSortType) {
+            case DATE_NEWEST:
+                currentSortType = SortType.DATE_OLDEST;
+                Toast.makeText(requireContext(), "Sort: Oldest first", Toast.LENGTH_SHORT).show();
+                break;
+            case DATE_OLDEST:
+                currentSortType = SortType.NAME_ASC;
+                Toast.makeText(requireContext(), "Sort: Name A-Z", Toast.LENGTH_SHORT).show();
+                break;
+            case NAME_ASC:
+                currentSortType = SortType.NAME_DESC;
+                Toast.makeText(requireContext(), "Sort: Name Z-A", Toast.LENGTH_SHORT).show();
+                break;
+            case NAME_DESC:
+                currentSortType = SortType.DATE_NEWEST;
+                Toast.makeText(requireContext(), "Sort: Newest first", Toast.LENGTH_SHORT).show();
+                break;
+        }
         if (documents == null || documents.isEmpty()) return;
 
         switch (currentSortType) {

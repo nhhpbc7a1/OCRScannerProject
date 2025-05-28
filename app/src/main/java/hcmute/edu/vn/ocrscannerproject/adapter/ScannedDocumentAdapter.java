@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -25,7 +26,8 @@ public class ScannedDocumentAdapter extends RecyclerView.Adapter<ScannedDocument
     private Context context;
     private List<ScannedDocument> documents;
     private OnDocumentClickListener listener;
-    
+    private boolean showCheckboxes = false;
+
     // Interface for click events
     public interface OnDocumentClickListener {
         void onDocumentClick(ScannedDocument document);
@@ -66,6 +68,7 @@ public class ScannedDocumentAdapter extends RecyclerView.Adapter<ScannedDocument
         
         // Set document type
         holder.tvType.setText(document.getType());
+        holder.chk.setVisibility(showCheckboxes ? View.VISIBLE : View.GONE);
         
         // Load thumbnail if available
         if (document.getLocalImagePath() != null && !document.getLocalImagePath().isEmpty()) {
@@ -86,7 +89,7 @@ public class ScannedDocumentAdapter extends RecyclerView.Adapter<ScannedDocument
             // Set default image if no path
             holder.imgThumbnail.setImageResource(R.drawable.ic_menu_report_image);
         }
-        
+
         // Set click listeners
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
@@ -108,18 +111,25 @@ public class ScannedDocumentAdapter extends RecyclerView.Adapter<ScannedDocument
         return documents != null ? documents.size() : 0;
     }
 
+    public void setShowCheckboxes(boolean show) {
+        this.showCheckboxes = show;
+        notifyDataSetChanged();
+    }
+
     public static class DocumentViewHolder extends RecyclerView.ViewHolder {
         ImageView imgThumbnail;
         TextView tvTitle;
         TextView tvDate;
         TextView tvType;
-        
+        CheckBox chk;
+
         public DocumentViewHolder(@NonNull View itemView) {
             super(itemView);
             imgThumbnail = itemView.findViewById(R.id.img_document_thumbnail);
             tvTitle = itemView.findViewById(R.id.tv_document_title);
             tvDate = itemView.findViewById(R.id.tv_document_date);
             tvType = itemView.findViewById(R.id.tv_document_type);
+            chk = itemView.findViewById(R.id.checkbox_select);
         }
     }
 } 
