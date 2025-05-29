@@ -23,6 +23,7 @@ public class ScannedDocument {
     private boolean isMetadataSynced;
     private boolean isImageSynced;
     private String type; // PDF, TXT, Image, etc.
+    private long createdAt; // Timestamp in milliseconds
 
     /**
      * Constructs a new ScannedDocument with the specified file name and user ID.
@@ -40,6 +41,7 @@ public class ScannedDocument {
         this.localImagePaths = new ArrayList<>();
         this.cloudImageUrls = new ArrayList<>();
         this.type = "Image"; // Default type
+        this.createdAt = System.currentTimeMillis();
     }
     
     /**
@@ -519,5 +521,13 @@ public class ScannedDocument {
      */
     public void addImagePath(String imagePath) {
         addLocalImagePath(imagePath);
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
     }
 } 
