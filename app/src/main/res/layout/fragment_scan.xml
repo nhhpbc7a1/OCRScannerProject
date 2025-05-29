@@ -5,75 +5,144 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Background Image View -->
-    <ImageView
-        android:id="@+id/backgroundImageView"
+    <!-- CameraX Preview View -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@android:color/darker_gray"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Instructions Text -->
-    <TextView
-        android:id="@+id/instructionsText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:background="#80000000"
-        android:padding="16dp"
-        android:text="Tap the camera button to capture an image"
-        android:textColor="@android:color/white"
-        android:textSize="18sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+    <!-- Custom Black Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#000000"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <!-- Mode Selection Button Group -->
-    <RadioGroup
+        <!-- Close Button -->
+        <ImageButton
+            android:id="@+id/btnClose"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="start"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:tint="@android:color/white"
+            android:contentDescription="Close" />
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/toolbarTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Scanner"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- Flash Toggle Button -->
+        <ImageButton
+            android:id="@+id/btnFlash"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end"
+            android:layout_marginEnd="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_camera"
+            android:tint="@android:color/white"
+            android:contentDescription="Toggle Flash" />
+
+    </androidx.appcompat.widget.Toolbar>
+
+    <!-- Mode Selection Segmented Control -->
+    <com.google.android.material.button.MaterialButtonToggleGroup
         android:id="@+id/radioGroupMode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:background="@android:color/white"
-        android:elevation="4dp"
-        android:orientation="horizontal"
-        android:padding="4dp"
+        app:singleSelection="true"
+        app:selectionRequired="true"
+        style="?attr/materialButtonToggleGroupStyle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
 
-        <RadioButton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/radioSingle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
+            android:text="Single"
             android:checked="true"
-            android:text="Single" />
+            style="@style/Widget.App.Button.OutlinedButton.Toggle" />
 
-        <RadioButton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/radioBatch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Batch" />
-    </RadioGroup>
+            android:text="Batch"
+            style="@style/Widget.App.Button.OutlinedButton.Toggle" />
 
-    <!-- Capture Button -->
-    <Button
-        android:id="@+id/camera_capture_button"
-        android:layout_width="80dp"
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <!-- Black toolbar at the bottom -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/bottomToolbar"
+        android:layout_width="match_parent"
         android:layout_height="80dp"
-        android:layout_marginBottom="32dp"
-        android:background="@android:drawable/ic_menu_camera"
-        android:elevation="2dp"
+        android:background="#000000"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- Import File Button (Left) -->
+        <ImageButton
+            android:id="@+id/btnImportFile"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Import File"
+            android:src="@android:drawable/ic_menu_upload"
+            android:tint="@android:color/white"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Circular Capture Button (Center) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/camera_capture_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="Capture Photo"
+            app:backgroundTint="@android:color/white"
+            app:fabSize="normal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@android:drawable/ic_menu_camera"
+            app:tint="@android:color/black" />
+
+        <!-- Import Image Button (Right) -->
+        <ImageButton
+            android:id="@+id/btnImportImage"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginEnd="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Import Image"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:tint="@android:color/white"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Batch Mode Preview -->
     <androidx.cardview.widget.CardView
@@ -84,9 +153,13 @@
         android:elevation="4dp"
         android:visibility="gone"
         app:cardCornerRadius="4dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
+        app:strokeWidth="2dp"
+        app:strokeColor="#4CAF50"
+        app:layout_constraintBottom_toTopOf="@+id/bottomToolbar"
         app:layout_constraintEnd_toStartOf="@+id/btnComplete"
-        app:layout_constraintStart_toEndOf="@+id/camera_capture_button"
+        app:layout_constraintTop_toTopOf="@id/btnComplete"
         tools:visibility="visible">
 
         <ImageView
@@ -117,7 +190,7 @@
         android:layout_margin="16dp"
         android:text="Complete"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/bottomToolbar"
         app:layout_constraintEnd_toEndOf="parent"
         tools:visibility="visible" />
 

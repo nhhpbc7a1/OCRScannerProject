@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Nút được chọn: Màu đen (để dễ đọc) -->
+    <item android:state_checked="true" android:color="@color/white" /> <!-- Đen hoàn toàn -->
+    <!-- Nút không được chọn: Đen hơi trong suốt -->
+    <item android:color="#B3ffffff" /> <!-- #B3 là alpha ~70%, #000000 là màu đen -->
+</selector>

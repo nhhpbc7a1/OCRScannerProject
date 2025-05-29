@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Nút được chọn: Trong suốt (vì nút đã được fill màu) hoặc cùng màu với nền -->
+    <item android:state_checked="true" android:color="@android:color/transparent" />
+    <!-- Nút không được chọn: Đen hơi trong suốt -->
+    <item android:color="#B3000000" /> <!-- #B3 là alpha ~70%, #000000 là màu đen -->
+</selector>

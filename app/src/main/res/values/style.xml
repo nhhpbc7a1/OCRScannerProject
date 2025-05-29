@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget.App.Button.OutlinedButton.Toggle" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="backgroundTint">@color/toggle_button_background_tint</item>
+        <item name="android:textColor">@color/toggle_button_text_color</item>
+        <item name="strokeColor">@color/toggle_button_stroke_color</item>
+        <item name="strokeWidth">1dp</item> <!-- Quan trọng để viền hiển thị khi custom strokeColor -->
+        <!-- Nếu bạn có icon, bạn cũng có thể muốn custom iconTint -->
+        <!-- <item name="iconTint">@color/toggle_button_text_color</item> -->
+    </style>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Nút được chọn: Xám hơi trong suốt -->
+    <item android:state_checked="true" android:color="#B3666666" /> <!-- #B3 là alpha ~70%, #666666 là màu xám đậm -->
+    <!-- Nút không được chọn: Trong suốt (cho kiểu Outlined) -->
+    <item android:color="#B3000000"/>
+</selector>
