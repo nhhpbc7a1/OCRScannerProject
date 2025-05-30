@@ -3,15 +3,13 @@ package hcmute.edu.vn.ocrscannerproject;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -33,15 +31,17 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // Hide default ActionBar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+        
         setContentView(R.layout.activity_main);
 
         try {
-            // Set up Toolbar as ActionBar
-            Toolbar toolbar = findViewById(R.id.toolbar);
-            setSupportActionBar(toolbar);
-            
             // Set up Bottom Navigation
-            bottomNav = findViewById(R.id.view_bottom_navigation);
+            bottomNav = findViewById(R.id.bottomNavigationView);
             
             // Set up FAB Camera button
             fabCamera = findViewById(R.id.fab_camera);
@@ -60,19 +60,23 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
             
             navController = navHostFragment.getNavController();
             
-            // Configure the top level destinations (to not show back button on these screens)
-            AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
-                    R.id.homeFragment, R.id.settingsFragment
-            ).build();
-            
-            // Connect Navigation Controller with the ActionBar
-            NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-            
             // Set up manual navigation item selection instead of automatic setup
             bottomNav.setOnItemSelectedListener(this);
             
             // Set initial selected item
             bottomNav.setSelectedItemId(R.id.homeFragment);
+            
+            // Add destination change listener to handle bottom nav visibility
+            navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+                int destinationId = destination.getId();
+                // Show bottom nav only in Home and Settings fragments
+                if (destinationId == R.id.homeFragment || destinationId == R.id.settingsFragment) {
+                    showBottomNav();
+                } else {
+                    // Hide in all other fragments (scan, review, extract text, etc.)
+                    hideBottomNav();
+                }
+            });
             
             // Initialize sample data in background
             initializeSampleData();
@@ -118,11 +122,17 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
         return false;
     }
 
-    @Override
-    public boolean onSupportNavigateUp() {
-        if (navController != null) {
-            return navController.navigateUp() || super.onSupportNavigateUp();
+    public void showBottomNav() {
+        if (bottomNav != null && fabCamera != null) {
+            bottomNav.setVisibility(View.VISIBLE);
+            fabCamera.setVisibility(View.VISIBLE);
         }
-        return super.onSupportNavigateUp();
+    }
+
+    public void hideBottomNav() {
+        if (bottomNav != null && fabCamera != null) {
+            bottomNav.setVisibility(View.GONE);
+            fabCamera.setVisibility(View.GONE);
+        }
     }
 }

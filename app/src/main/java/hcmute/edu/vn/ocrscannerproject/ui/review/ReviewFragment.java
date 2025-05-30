@@ -1,12 +1,16 @@
 package hcmute.edu.vn.ocrscannerproject.ui.review;
 
-import android.app.AlertDialog;
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,16 +20,33 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.load.resource.bitmap.BitmapTransformation;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.yalantis.ucrop.UCrop;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,6 +54,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,22 +62,29 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
 import hcmute.edu.vn.ocrscannerproject.R;
 import hcmute.edu.vn.ocrscannerproject.core.entities.ScannedDocument;
 import hcmute.edu.vn.ocrscannerproject.data.ScannedDocumentRepository;
+import android.media.ExifInterface;
 
 public class ReviewFragment extends Fragment {
 
     private static final String TAG = "ReviewFragment";
     private static final String ANONYMOUS_USER = "anonymous";
+    private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final int REQUEST_PICK_IMAGE = 2;
     
+    private TextView tvFileName;
     private ImageButton btnBack;
-    private EditText etFileName;
+    private ImageView btnEditName;
     private ViewPager2 viewPagerImages;
-    private TabLayout indicatorDots;
-    private LinearLayout actionAddImage, actionRotate, actionCrop, actionFilter, actionExtractText, actionSave;
+    private LinearLayout actionRotate, actionCrop, actionExtractText, actionSave;
+    private BottomNavigationView bottomNav;
+    private FloatingActionButton fabCamera;
     
     private ArrayList<String> capturedImages = new ArrayList<>();
     private ArrayList<String> processedImages = new ArrayList<>();
@@ -64,7 +93,10 @@ public class ReviewFragment extends Fragment {
     
     // Rotation angles for each image
     private List<Integer> rotationAngles = new ArrayList<>();
-    private final Executor executor = Executors.newSingleThreadExecutor();
+    private ExecutorService executor;
+    
+    private TextView tvPageIndicator;
+    private ImageButton btnPrevious, btnNext;
 
     public static ReviewFragment newInstance(String[] imagePaths) {
         ReviewFragment fragment = new ReviewFragment();
@@ -77,6 +109,7 @@ public class ReviewFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        executor = Executors.newSingleThreadExecutor();
         if (getArguments() != null) {
             // Nhận dữ liệu dưới dạng String[] và chuyển thành ArrayList
             String[] imagePathsArray = getArguments().getStringArray("capturedImages");
@@ -97,34 +130,90 @@ public class ReviewFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_review, container, false);
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        View view = inflater.inflate(R.layout.fragment_review, container, false);
         
-        initializeViews(view);
+        // Initialize views
+        tvFileName = view.findViewById(R.id.tv_file_name);
+        btnBack = view.findViewById(R.id.btn_back);
+        btnEditName = view.findViewById(R.id.btn_edit_name);
+        viewPagerImages = view.findViewById(R.id.view_pager_images);
+        
+        // Initialize page indicator views
+        tvPageIndicator = view.findViewById(R.id.tv_page_indicator);
+        btnPrevious = view.findViewById(R.id.btn_previous);
+        btnNext = view.findViewById(R.id.btn_next);
+        
+        actionRotate = view.findViewById(R.id.action_rotate);
+        actionCrop = view.findViewById(R.id.action_crop);
+        actionExtractText = view.findViewById(R.id.action_extract_text);
+        actionSave = view.findViewById(R.id.action_save);
+        
+        // Set up click listeners
+        btnBack.setOnClickListener(v -> {
+            showDiscardConfirmationDialog();
+        });
+        
+        // Make the entire filename layout clickable
+        View layoutFilename = view.findViewById(R.id.layout_filename);
+        layoutFilename.setOnClickListener(v -> showEditFileNameDialog());
+        btnEditName.setOnClickListener(v -> showEditFileNameDialog());
+        
         setupListeners();
         setupViewPager();
         setupDefaultFileName();
         
         // Pre-process images for better OCR
         processImages();
+        
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        
+        // Initialize UI components
+        initializeViews(view);
+        setupListeners();
+        setupViewPager();
+        setupDefaultFileName();
+        
+        // Hide bottom navigation
+        hideBottomNavigation();
+
+        Log.d(TAG, "onViewCreated: Hiding bottom navigation and action bar");
+        
+        // Pre-process images for better OCR
+        processImages();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Hide bottom navigation
+        hideBottomNavigation();
+        Log.d(TAG, "onResume: Hiding bottom navigation and action bar");
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Show bottom navigation when leaving this fragment
+        showBottomNavigation();
+        Log.d(TAG, "onDestroyView: Showing bottom navigation");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Shutdown executor properly
+        if (!executor.isShutdown()) {
+            executor.shutdownNow();
+        }
     }
     
     private void initializeViews(View view) {
-        btnBack = view.findViewById(R.id.btn_back);
-        etFileName = view.findViewById(R.id.et_file_name);
-        viewPagerImages = view.findViewById(R.id.view_pager_images);
-        indicatorDots = view.findViewById(R.id.indicator_dots);
-        
-        actionAddImage = view.findViewById(R.id.action_add_image);
-        actionRotate = view.findViewById(R.id.action_rotate);
-        actionCrop = view.findViewById(R.id.action_crop);
-        actionFilter = view.findViewById(R.id.action_filter);
-        actionExtractText = view.findViewById(R.id.action_extract_text);
-        actionSave = view.findViewById(R.id.action_save);
+        // Initialize any other views if needed
     }
     
     private void setupListeners() {
@@ -134,11 +223,6 @@ public class ReviewFragment extends Fragment {
         });
         
         // Action buttons
-        actionAddImage.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Add image", Toast.LENGTH_SHORT).show();
-            // Open gallery or camera to add more images
-        });
-        
         actionRotate.setOnClickListener(v -> {
             if (capturedImages.isEmpty() || currentPageIndex >= capturedImages.size()) {
                 return;
@@ -153,16 +237,6 @@ public class ReviewFragment extends Fragment {
             updateImageInAdapter(currentPageIndex);
             
             Toast.makeText(requireContext(), "Image rotated", Toast.LENGTH_SHORT).show();
-        });
-        
-        actionCrop.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Crop image", Toast.LENGTH_SHORT).show();
-            // Crop current image
-        });
-        
-        actionFilter.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Apply filter", Toast.LENGTH_SHORT).show();
-            // Apply filter to current image
         });
         
         actionExtractText.setOnClickListener(v -> {
@@ -182,7 +256,7 @@ public class ReviewFragment extends Fragment {
         });
         
         actionSave.setOnClickListener(v -> {
-            String fileName = etFileName.getText().toString().trim();
+            String fileName = tvFileName.getText().toString().trim();
             if (fileName.isEmpty()) {
                 Toast.makeText(requireContext(), "Please enter a file name", Toast.LENGTH_SHORT).show();
                 return;
@@ -190,6 +264,17 @@ public class ReviewFragment extends Fragment {
             
             // Save document with processed images
             saveDocument(fileName);
+        });
+
+        // Crop button
+        actionCrop.setOnClickListener(v -> {
+            if (capturedImages.isEmpty() || currentPageIndex >= capturedImages.size()) {
+                return;
+            }
+            
+            String currentImagePath = capturedImages.get(currentPageIndex);
+            // Start crop activity
+            startCropActivity(currentImagePath);
         });
     }
     
@@ -203,23 +288,20 @@ public class ReviewFragment extends Fragment {
         ReviewImageAdapter adapter = new ReviewImageAdapter(requireContext(), capturedImages, rotationAngles);
         viewPagerImages.setAdapter(adapter);
         
+        // Update initial page indicator
+        updatePageIndicator(0);
+        
         // Setup page change listener
         viewPagerImages.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
                 currentPageIndex = position;
+                updatePageIndicator(position);
             }
         });
         
-        // Setup dots indicator for multiple images
-        if (capturedImages.size() > 1) {
-            new TabLayoutMediator(indicatorDots, viewPagerImages, (tab, position) -> {
-                // Just create the tab, no custom view needed
-            }).attach();
-            indicatorDots.setVisibility(View.VISIBLE);
-        } else {
-            indicatorDots.setVisibility(View.GONE);
-        }
+        // Setup navigation buttons
+        setupNavigationButtons();
     }
     
     private void updateImageInAdapter(int position) {
@@ -233,7 +315,7 @@ public class ReviewFragment extends Fragment {
         // Generate default file name with current date/time
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
         String defaultFileName = "Scan_" + sdf.format(new Date());
-        etFileName.setText(defaultFileName);
+        tvFileName.setText(defaultFileName);
     }
     
     private void processImages() {
@@ -244,34 +326,56 @@ public class ReviewFragment extends Fragment {
         isProcessing = true;
         processedImages.clear();
         
-        // Process images in background
-        executor.execute(() -> {
-            for (int i = 0; i < capturedImages.size(); i++) {
-                String imagePath = capturedImages.get(i);
-                int rotation = rotationAngles.get(i);
-                
+        try {
+            // Process images in background
+            executor.execute(() -> {
                 try {
-                    // Load and process image
-                    String processedPath = preprocessImageForOCR(imagePath, rotation);
-                    if (processedPath != null) {
-                        processedImages.add(processedPath);
-                    } else {
-                        // If processing failed, use original
-                        processedImages.add(imagePath);
+                    for (int i = 0; i < capturedImages.size(); i++) {
+                        if (Thread.currentThread().isInterrupted()) {
+                            return;
+                        }
+                        
+                        String imagePath = capturedImages.get(i);
+                        int rotation = rotationAngles.get(i);
+                        
+                        try {
+                            // Load and process image
+                            String processedPath = preprocessImageForOCR(imagePath, rotation);
+                            if (processedPath != null) {
+                                processedImages.add(processedPath);
+                            } else {
+                                // If processing failed, use original
+                                processedImages.add(imagePath);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error processing image: " + e.getMessage(), e);
+                            processedImages.add(imagePath); // Use original on error
+                        }
+                    }
+                    
+                    if (getActivity() != null && !Thread.currentThread().isInterrupted()) {
+                        getActivity().runOnUiThread(() -> {
+                            isProcessing = false;
+                            if (isAdded()) {
+                                Toast.makeText(requireContext(), 
+                                        processedImages.size() + " images ready for OCR", 
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "Error processing image: " + e.getMessage(), e);
-                    processedImages.add(imagePath); // Use original on error
+                    Log.e(TAG, "Error in processImages: " + e.getMessage(), e);
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            isProcessing = false;
+                        });
+                    }
                 }
-            }
-            
-            requireActivity().runOnUiThread(() -> {
-                isProcessing = false;
-                Toast.makeText(requireContext(), 
-                        processedImages.size() + " images ready for OCR", 
-                        Toast.LENGTH_SHORT).show();
             });
-        });
+        } catch (RejectedExecutionException e) {
+            Log.e(TAG, "Task rejected: " + e.getMessage(), e);
+            isProcessing = false;
+        }
     }
     
     private String preprocessImageForOCR(String imagePath, int rotation) {
@@ -364,7 +468,7 @@ public class ReviewFragment extends Fragment {
             String[] imagePathsArray = validImages.toArray(new String[0]);
             args.putStringArray("processedImages", imagePathsArray);
             
-            args.putString("fileName", etFileName.getText().toString().trim());
+            args.putString("fileName", tvFileName.getText().toString().trim());
             
             // Navigate to text extraction fragment
             Navigation.findNavController(requireView())
@@ -468,10 +572,216 @@ public class ReviewFragment extends Fragment {
         }
     }
     
+    private void showEditFileNameDialog() {
+        // Create dialog with custom layout
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_filename, null);
+        builder.setView(dialogView);
+        
+        // Get reference to EditText in dialog
+        TextInputEditText etFilename = dialogView.findViewById(R.id.et_filename);
+        // Set current text
+        etFilename.setText(tvFileName.getText());
+        etFilename.setSelection(etFilename.getText().length());
+        
+        // Add Cancel and Save buttons
+        builder.setNegativeButton("Cancel", null);
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            String newFileName = etFilename.getText().toString().trim();
+            if (!newFileName.isEmpty()) {
+                tvFileName.setText(newFileName);
+            }
+        });
+        
+        // Show dialog
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+    
+    private void hideBottomNavigation() {
+        // Find and hide the bottom navigation view from activity
+        if (getActivity() != null) {
+            // Hide action bar
+            if (getActivity() instanceof AppCompatActivity) {
+                ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
+                if (actionBar != null) {
+                    Log.d(TAG, "hideBottomNavigation: Hiding action bar");
+                    actionBar.hide();
+                } else {
+                    Log.d(TAG, "hideBottomNavigation: ActionBar is null");
+                }
+            }
+
+            bottomNav = getActivity().findViewById(R.id.bottomNavigationView);
+            if (bottomNav != null) {
+                Log.d(TAG, "hideBottomNavigation: Hiding bottom navigation");
+                bottomNav.setVisibility(View.GONE);
+            }
+            
+            // Also hide the floating action button
+            fabCamera = getActivity().findViewById(R.id.fab_camera);
+            if (fabCamera != null) {
+                Log.d(TAG, "hideBottomNavigation: Hiding camera FAB");
+                fabCamera.setVisibility(View.GONE);
+            }
+        } else {
+            Log.d(TAG, "hideBottomNavigation: Activity is null");
+        }
+    }
+    
+    private void showBottomNavigation() {
+        // Show bottom navigation when leaving this fragment
+        if (bottomNav != null) {
+            Log.d(TAG, "showBottomNavigation: Showing bottom navigation");
+            bottomNav.setVisibility(View.VISIBLE);
+        }
+        
+        // Also restore the floating action button
+        if (fabCamera != null) {
+            Log.d(TAG, "showBottomNavigation: Showing camera FAB");
+            fabCamera.setVisibility(View.VISIBLE);
+        }
+    }
+    
+    private void updatePageIndicator(int position) {
+        int totalPages = capturedImages.size();
+        tvPageIndicator.setText(String.format(Locale.getDefault(), "%d/%d", position + 1, totalPages));
+        
+        // Update navigation buttons state
+        btnPrevious.setEnabled(position > 0);
+        btnNext.setEnabled(position < totalPages - 1);
+        
+        // Update alpha for better visual feedback
+        btnPrevious.setAlpha(position > 0 ? 1.0f : 0.5f);
+        btnNext.setAlpha(position < totalPages - 1 ? 1.0f : 0.5f);
+    }
+    
+    private void setupNavigationButtons() {
+        btnPrevious.setOnClickListener(v -> {
+            if (currentPageIndex > 0) {
+                viewPagerImages.setCurrentItem(currentPageIndex - 1, true);
+            }
+        });
+
+        btnNext.setOnClickListener(v -> {
+            if (currentPageIndex < capturedImages.size() - 1) {
+                viewPagerImages.setCurrentItem(currentPageIndex + 1, true);
+            }
+        });
+    }
+    
+    private void startCropActivity(String imagePath) {
+        try {
+            Uri imageUri;
+            if (imagePath.startsWith("content://")) {
+                imageUri = Uri.parse(imagePath);
+            } else {
+                imageUri = Uri.fromFile(new File(imagePath));
+            }
+            
+            // Start UCrop activity
+            String destinationFileName = "cropped_" + System.currentTimeMillis() + ".jpg";
+            UCrop.of(imageUri, Uri.fromFile(new File(requireContext().getCacheDir(), destinationFileName)))
+                    .withAspectRatio(0, 0) // Free form
+                    .withMaxResultSize(1920, 1920) // Max resolution
+                    .start(requireContext(), this);
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting crop activity", e);
+            Toast.makeText(requireContext(), "Error starting crop activity", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if (resultCode == Activity.RESULT_OK) {
+            switch (requestCode) {
+                case UCrop.REQUEST_CROP:
+                    // Handle crop result
+                    handleCropResult(data);
+                    break;
+            }
+        } else if (resultCode == UCrop.RESULT_ERROR && data != null) {
+            final Throwable cropError = UCrop.getError(data);
+            Log.e(TAG, "Crop error: " + cropError);
+            Toast.makeText(requireContext(), "Error cropping image", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void handleCropResult(Intent data) {
+        final Uri resultUri = UCrop.getOutput(data);
+        if (resultUri != null) {
+            try {
+                // Replace the current image with the cropped one
+                String croppedPath = getPathFromUri(resultUri);
+                if (croppedPath != null && currentPageIndex < capturedImages.size()) {
+                    capturedImages.set(currentPageIndex, croppedPath);
+                    rotationAngles.set(currentPageIndex, 0); // Reset rotation for cropped image
+                    updateViewPager();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error handling crop result", e);
+                Toast.makeText(requireContext(), "Error saving cropped image", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void updateViewPager() {
+        ReviewImageAdapter adapter = new ReviewImageAdapter(requireContext(), capturedImages, rotationAngles);
+        viewPagerImages.setAdapter(adapter);
+        updatePageIndicator(currentPageIndex);
+    }
+
+    // Helper methods
+    private String currentPhotoPath;
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",        /* suffix */
+                storageDir     /* directory */
+        );
+        
+        // Save a file: path for use with ACTION_VIEW intents
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
+    private String getPathFromUri(Uri uri) {
+        try {
+            if (uri.getScheme().equals("file")) {
+                return uri.getPath();
+            } else if (uri.getScheme().equals("content")) {
+                String[] projection = {MediaStore.Images.Media.DATA};
+                Cursor cursor = requireContext().getContentResolver().query(uri, projection, null, null, null);
+                if (cursor != null) {
+                    try {
+                        if (cursor.moveToFirst()) {
+                            return cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
+                        }
+                    } finally {
+                        cursor.close();
+                    }
+                }
+                // If we can't get the file path, just use the content URI as is
+                return uri.toString();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting path from uri", e);
+        }
+        return null;
+    }
+    
     /**
      * Adapter class for the ViewPager to display captured images
      */
     private static class ReviewImageAdapter extends androidx.recyclerview.widget.RecyclerView.Adapter<ReviewImageAdapter.ImageViewHolder> {
+        private static final String TAG = "ReviewImageAdapter";
         private final Context context;
         private final List<String> imagePaths;
         private final List<Integer> rotationAngles;
@@ -496,28 +806,78 @@ public class ReviewFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull ImageViewHolder holder, int position) {
             String imagePath = imagePaths.get(position);
-            int rotation = rotationAngles.get(position);
+            int userRotation = rotationAngles.get(position);
             
             try {
-                Bitmap bitmap;
-                if (imagePath.startsWith("content://")) {
-                    bitmap = MediaStore.Images.Media.getBitmap(
-                            context.getContentResolver(), Uri.parse(imagePath));
-                } else {
-                    bitmap = BitmapFactory.decodeFile(imagePath);
+                // Get EXIF orientation
+                ExifInterface exif = new ExifInterface(imagePath);
+                int orientation = exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_UNDEFINED);
+
+                // Calculate total rotation based on EXIF and user rotation
+                int totalRotation = userRotation;
+                switch (orientation) {
+                    case ExifInterface.ORIENTATION_ROTATE_90:
+                        totalRotation += 90;
+                        break;
+                    case ExifInterface.ORIENTATION_ROTATE_180:
+                        totalRotation += 180;
+                        break;
+                    case ExifInterface.ORIENTATION_ROTATE_270:
+                        totalRotation += 270;
+                        break;
                 }
                 
-                if (bitmap != null && rotation != 0) {
-                    Matrix matrix = new Matrix();
-                    matrix.postRotate(rotation);
-                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), 
-                            matrix, true);
-                }
+                // Normalize rotation to 0-360
+                totalRotation = ((totalRotation % 360) + 360) % 360;
+
+                // Use Glide to load and rotate the image
+                RequestOptions options = new RequestOptions()
+                    .transform(new RotateTransformation(context, totalRotation));
                 
-                holder.imageView.setImageBitmap(bitmap);
-            } catch (IOException e) {
+                Glide.with(context)
+                    .load(imagePath)
+                    .apply(options)
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            Log.e(TAG, "Error loading image: " + e);
+                            holder.imageView.setImageResource(R.drawable.ic_menu_report_image);
+                            return true;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            return false;
+                        }
+                    })
+                    .into(holder.imageView);
+                    
+            } catch (Exception e) {
                 Log.e(TAG, "Error loading image: " + e.getMessage(), e);
                 holder.imageView.setImageResource(R.drawable.ic_menu_report_image);
+            }
+        }
+        
+        private static class RotateTransformation extends BitmapTransformation {
+            private final float rotateRotationAngle;
+
+            RotateTransformation(Context context, float rotateRotationAngle) {
+                super();
+                this.rotateRotationAngle = rotateRotationAngle;
+            }
+
+            @Override
+            protected Bitmap transform(@NonNull com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool pool, @NonNull Bitmap toTransform, int outWidth, int outHeight) {
+                Matrix matrix = new Matrix();
+                matrix.postRotate(rotateRotationAngle);
+                return Bitmap.createBitmap(toTransform, 0, 0, toTransform.getWidth(), toTransform.getHeight(), matrix, true);
+            }
+
+            @Override
+            public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
+                messageDigest.update(("rotate" + rotateRotationAngle).getBytes());
             }
         }
         

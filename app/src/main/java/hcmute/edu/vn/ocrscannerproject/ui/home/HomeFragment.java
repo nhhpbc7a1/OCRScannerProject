@@ -181,8 +181,8 @@ public class HomeFragment extends Fragment implements ScannedDocumentAdapter.OnD
             
             // Update icon
             btnViewMode.setImageResource(isGridView ? 
-                    android.R.drawable.ic_dialog_dialer : // Grid icon
-                    android.R.drawable.ic_menu_sort_by_size); // List icon
+                    R.drawable.ic_view_block : // Grid icon
+                    R.drawable.ic_view_list); // List icon
         });
         
         // Sort button

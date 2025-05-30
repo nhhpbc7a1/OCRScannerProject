@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-files-path
-        name="ocr_images"
-        path="Pictures/OCRScanner" />
+        name="documents"
+        path="documents/" />
+    <external-files-path
+        name="images"
+        path="images/" />
     <external-path
-        name="external_files"
+        name="external"
         path="." />
     <files-path
-        name="internal_files"
+        name="files"
         path="." />
     <cache-path
-        name="cache_files"
+        name="cache"
         path="." />
 </paths> 

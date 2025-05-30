@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "hcmute.edu.vn.ocrscannerproject"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -62,6 +62,7 @@ dependencies {
 
     // Glide for image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
     
     // Gson for JSON serialization
     implementation("com.google.code.gson:gson:2.10.1")
@@ -80,4 +81,14 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+    // UCrop
+    implementation("com.github.Yalantis:uCrop:2.2.8-native")
+
+    // PDF Generation
+    implementation("com.itextpdf:itextpdf:5.5.13.3")
+    
+    // HTTP Client for OpenAI API
+    implementation("com.squareup.okhttp3:okhttp:4.9.3")
+    implementation("org.json:json:20231013") // For JSON handling
 }

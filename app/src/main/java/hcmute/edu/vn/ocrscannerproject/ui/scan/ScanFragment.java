@@ -5,18 +5,25 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.media.Image;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.MediaStore.Images.Media;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -32,6 +39,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
@@ -48,6 +56,8 @@ import androidx.navigation.Navigation;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.android.material.button.MaterialButton;
+import com.bumptech.glide.Glide;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -65,6 +75,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import hcmute.edu.vn.ocrscannerproject.R;
+import android.media.ExifInterface;
 
 public class ScanFragment extends Fragment {
 
@@ -80,8 +91,8 @@ public class ScanFragment extends Fragment {
     private com.google.android.material.button.MaterialButtonToggleGroup modeToggleGroup;
     private com.google.android.material.button.MaterialButton btnSingle, btnBatch;
     private FloatingActionButton captureButton;
-    private ImageButton btnImportFile, btnImportImage;
-    private Button btnComplete;
+    private ImageButton btnImportFile, btnImportImage, btnDiscard;
+    private MaterialButton btnComplete;
     private CardView cardBatchPreview;
     private TextView tvBatchCount;
     private ImageView imgBatchPreview;
@@ -107,16 +118,36 @@ public class ScanFragment extends Fragment {
     private ActivityResultLauncher<String> getImageLauncher;
     private ActivityResultLauncher<String> getDocumentLauncher;
 
+    private View previewContainer, importFileContainer, importImageContainer, discardContainer, completeContainer;
+
+    private MediaPlayer mediaPlayer;
+    private File outputDirectory;
+    private List<File> photoList;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Hide the action bar
-        if (getActivity() instanceof AppCompatActivity) {
-            ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-            if (actionBar != null) {
-                actionBar.hide();
-            }
+        // Initialize photoList
+        photoList = new ArrayList<>();
+        
+        // Initialize output directory
+        outputDirectory = new File(requireContext().getFilesDir(), "OCRScanner");
+        if (!outputDirectory.exists()) {
+            boolean dirCreated = outputDirectory.mkdirs();
+            Log.d(TAG, "Output directory created: " + dirCreated + " at " + outputDirectory.getAbsolutePath());
+        }
+        
+        // Set status bar color to black and icons to light
+        if (getActivity() != null) {
+            Window window = getActivity().getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(Color.BLACK);
+            // Make status bar icons light
+            View decorView = window.getDecorView();
+            int flags = decorView.getSystemUiVisibility();
+            flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR; // Remove light status bar flag
+            decorView.setSystemUiVisibility(flags);
         }
         
         // Register permission launcher
@@ -171,6 +202,9 @@ public class ScanFragment extends Fragment {
                 
         // Initialize camera executor
         cameraExecutor = Executors.newSingleThreadExecutor();
+
+        // Initialize MediaPlayer for camera shutter sound
+        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.camera_shutter);
     }
 
     @Nullable
@@ -199,7 +233,7 @@ public class ScanFragment extends Fragment {
     private void hideBottomNavigation() {
         // Find and hide the bottom navigation view from activity
         if (getActivity() != null) {
-            bottomNav = getActivity().findViewById(R.id.view_bottom_navigation);
+            bottomNav = getActivity().findViewById(R.id.bottomNavigationView);
             if (bottomNav != null) {
                 bottomNav.setVisibility(View.GONE);
             }
@@ -229,15 +263,35 @@ public class ScanFragment extends Fragment {
         btnSingle = view.findViewById(R.id.radioSingle);
         btnBatch = view.findViewById(R.id.radioBatch);
         captureButton = view.findViewById(R.id.camera_capture_button);
+        
+        // Initialize containers
+        importFileContainer = view.findViewById(R.id.importFileContainer);
+        importImageContainer = view.findViewById(R.id.importImageContainer);
+        discardContainer = view.findViewById(R.id.discardContainer);
+        completeContainer = view.findViewById(R.id.completeContainer);
+        
+        // Initialize buttons
+        btnClose = view.findViewById(R.id.btnClose);
+        btnFlash = view.findViewById(R.id.btnFlash);
         btnImportFile = view.findViewById(R.id.btnImportFile);
         btnImportImage = view.findViewById(R.id.btnImportImage);
+        btnDiscard = view.findViewById(R.id.btnDiscard);
         btnComplete = view.findViewById(R.id.btnComplete);
+        
+        previewContainer = view.findViewById(R.id.previewContainer);
         cardBatchPreview = view.findViewById(R.id.cardBatchPreview);
         tvBatchCount = view.findViewById(R.id.tvBatchCount);
         imgBatchPreview = view.findViewById(R.id.imgBatchPreview);
         previewView = view.findViewById(R.id.previewView);
-        btnClose = view.findViewById(R.id.btnClose);
-        btnFlash = view.findViewById(R.id.btnFlash);
+
+        // Set Single mode as default
+        modeToggleGroup.check(R.id.radioSingle);
+        isBatchMode = false;
+
+        // Set initial visibility
+        previewContainer.setVisibility(View.GONE);
+        discardContainer.setVisibility(View.GONE);
+        completeContainer.setVisibility(View.GONE);
     }
     
     private void setupListeners() {
@@ -246,15 +300,13 @@ public class ScanFragment extends Fragment {
             if (isChecked) {
             isBatchMode = checkedId == R.id.radioBatch;
             
-            // Show/hide batch UI elements based on mode
+                // Update UI based on mode
             if (isBatchMode) {
                 if (batchCount > 0) {
-                    cardBatchPreview.setVisibility(View.VISIBLE);
-                    btnComplete.setVisibility(View.VISIBLE);
+                        updateBatchModeUI(true);
                 }
             } else {
-                cardBatchPreview.setVisibility(View.GONE);
-                btnComplete.setVisibility(View.GONE);
+                    updateBatchModeUI(false);
             }
             
             Toast.makeText(requireContext(), 
@@ -303,10 +355,20 @@ public class ScanFragment extends Fragment {
         
         // Close button click listener
         btnClose.setOnClickListener(v -> {
-            // Navigate back
-            if (getActivity() != null) {
-                getActivity().onBackPressed();
+            if (batchCount > 0) {
+                // Show discard confirmation dialog
+                showDiscardConfirmationDialog();
+            } else {
+                // Navigate back directly if no images captured
+                if (getActivity() != null) {
+                    getActivity().onBackPressed();
+                }
             }
+        });
+        
+        // Discard button click listener
+        btnDiscard.setOnClickListener(v -> {
+            showDiscardConfirmationDialog();
         });
         
         // Flash button click listener
@@ -407,6 +469,9 @@ public class ScanFragment extends Fragment {
                 // Set up the capture use case to allow users to take photos
                 imageCapture = new ImageCapture.Builder()
                         .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                        .setTargetRotation(requireView().getDisplay().getRotation())
+                        .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                        .setJpegQuality(100)
                         .build();
                 
                 // Unbind use cases before rebinding
@@ -434,52 +499,65 @@ public class ScanFragment extends Fragment {
     }
     
     private void captureImage() {
-        if (imageCapture == null) {
-            Log.e(TAG, "Cannot capture image, imageCapture is null");
-            Toast.makeText(requireContext(), "Camera chưa sẵn sàng", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
+        if (imageCapture == null) return;
+
         // Create output file to hold the image
-        File photoFile;
-        try {
-            photoFile = createImageFile();
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to create image file: " + e.getMessage(), e);
-            Toast.makeText(requireContext(), 
-                    "Không thể tạo file ảnh: " + e.getMessage(),
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        String currentPhotoPath = photoFile.getAbsolutePath();
-        Log.d(TAG, "Image will be saved to: " + currentPhotoPath);
-        
+        File photoFile = new File(
+                outputDirectory,
+                new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.getDefault())
+                        .format(System.currentTimeMillis()) + ".jpg");
+
         // Create output options object which contains file + metadata
-        ImageCapture.OutputFileOptions outputOptions = new ImageCapture.OutputFileOptions
-                .Builder(photoFile)
+        ImageCapture.OutputFileOptions outputOptions = new ImageCapture.OutputFileOptions.Builder(photoFile)
+                .setMetadata(new ImageCapture.Metadata())
                 .build();
-        
+
         // Set up image capture listener
         imageCapture.takePicture(
-                outputOptions, 
+                outputOptions,
                 ContextCompat.getMainExecutor(requireContext()),
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                        Log.d(TAG, "Image saved successfully: " + currentPhotoPath);
-                        Toast.makeText(requireContext(), "Đã chụp ảnh thành công", Toast.LENGTH_SHORT).show();
-                        onImageCaptured(currentPhotoPath);
+                        Uri savedUri = Uri.fromFile(photoFile);
+                        try {
+                            // Set EXIF orientation
+                            ExifInterface exif = new ExifInterface(photoFile.getAbsolutePath());
+                            int rotation = requireView().getDisplay().getRotation();
+                            int orientation;
+                            switch (rotation) {
+                                case Surface.ROTATION_90:
+                                    orientation = ExifInterface.ORIENTATION_ROTATE_90;
+                                    break;
+                                case Surface.ROTATION_180:
+                                    orientation = ExifInterface.ORIENTATION_ROTATE_180;
+                                    break;
+                                case Surface.ROTATION_270:
+                                    orientation = ExifInterface.ORIENTATION_ROTATE_270;
+                                    break;
+                                default:
+                                    orientation = ExifInterface.ORIENTATION_NORMAL;
+                            }
+                            exif.setAttribute(ExifInterface.TAG_ORIENTATION, String.valueOf(orientation));
+                            exif.saveAttributes();
+                        } catch (IOException e) {
+                            Log.e(TAG, "Error setting EXIF orientation: " + e.getMessage());
+                        }
+
+                        String msg = "Photo capture succeeded: " + savedUri;
+                        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, msg);
+
+                        // Process the captured image
+                        onImageCaptured(photoFile.getAbsolutePath());
                     }
-                    
+
                     @Override
-                    public void onError(@NonNull ImageCaptureException exception) {
-                        Log.e(TAG, "Error capturing image: " + exception.getMessage(), exception);
-                        Toast.makeText(requireContext(),
-                                "Lỗi khi chụp ảnh: " + exception.getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                    public void onError(@NonNull ImageCaptureException exc) {
+                        Log.e(TAG, "Photo capture failed: " + exc.getMessage(), exc);
                     }
-                });
+                }
+        );
     }
     
     private File createImageFile() throws IOException {
@@ -522,17 +600,12 @@ public class ScanFragment extends Fragment {
         // Add captured image to the list
         capturedImagePaths.add(imagePath);
         
-        // Load thumbnail for preview
-        try {
-            Bitmap thumbnail = BitmapFactory.decodeFile(imagePath);
-            if (thumbnail != null && imgBatchPreview != null) {
-                Log.d(TAG, "Loaded thumbnail: " + thumbnail.getWidth() + "x" + thumbnail.getHeight());
-                imgBatchPreview.setImageBitmap(thumbnail);
-            } else {
-                Log.e(TAG, "Failed to load thumbnail from: " + imagePath);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading thumbnail: " + e.getMessage(), e);
+        // Load thumbnail using Glide
+        if (imgBatchPreview != null) {
+            Glide.with(requireContext())
+                .load(imagePath)
+                .override(1024, 1024) // Limit size for memory efficiency
+                .into(imgBatchPreview);
         }
         
         if (isBatchMode) {
@@ -540,9 +613,8 @@ public class ScanFragment extends Fragment {
             batchCount++;
             tvBatchCount.setText(String.valueOf(batchCount));
             
-            // Show batch preview components
-            cardBatchPreview.setVisibility(View.VISIBLE);
-            btnComplete.setVisibility(View.VISIBLE);
+            // Update UI for batch mode
+            updateBatchModeUI(true);
             
             Toast.makeText(requireContext(), 
                     "Đã chụp ảnh " + batchCount + " vào batch", 
@@ -596,9 +668,14 @@ public class ScanFragment extends Fragment {
     private void resetBatchState() {
         batchCount = 0;
         capturedImagePaths.clear();
-        cardBatchPreview.setVisibility(View.GONE);
-        btnComplete.setVisibility(View.GONE);
+        previewContainer.setVisibility(View.GONE);
+        discardContainer.setVisibility(View.GONE);
+        completeContainer.setVisibility(View.GONE);
         tvBatchCount.setText("0");
+        
+        // Show import buttons again
+        importFileContainer.setVisibility(View.VISIBLE);
+        importImageContainer.setVisibility(View.VISIBLE);
     }
     
     private boolean allPermissionsGranted() {
@@ -666,8 +743,8 @@ public class ScanFragment extends Fragment {
             
             // Update flash icon
             btnFlash.setImageResource(isFlashEnabled ? 
-                android.R.drawable.ic_menu_revert : 
-                android.R.drawable.ic_menu_camera);
+                R.drawable.ic_flash_on : 
+                R.drawable.ic_flash_off);
             
             // Show feedback
             Toast.makeText(requireContext(),
@@ -683,16 +760,19 @@ public class ScanFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        
-        // Hide the action bar when returning to this fragment
-        if (getActivity() instanceof AppCompatActivity) {
-            ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-            if (actionBar != null) {
-                actionBar.hide();
-            }
+
+        // Set status bar color to black and icons to light
+        if (getActivity() != null) {
+            Window window = getActivity().getWindow();
+            window.setStatusBarColor(Color.BLACK);
+            // Make status bar icons light
+            View decorView = window.getDecorView();
+            int flags = decorView.getSystemUiVisibility();
+            flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR; // Remove light status bar flag
+            decorView.setSystemUiVisibility(flags);
         }
         
-        // Also hide bottom navigation
+        // Hide bottom navigation
         hideBottomNavigation();
     }
 
@@ -702,18 +782,71 @@ public class ScanFragment extends Fragment {
         
         // Show bottom navigation when leaving this fragment
         showBottomNavigation();
-        
-        // Restore action bar
-        if (getActivity() instanceof AppCompatActivity) {
-            ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-            if (actionBar != null) {
-                actionBar.show();
-            }
+
+        // Restore original status bar color and light status bar
+        if (getActivity() != null) {
+            Window window = getActivity().getWindow();
+            window.setStatusBarColor(Color.WHITE);
+            // Restore light status bar
+            View decorView = window.getDecorView();
+            int flags = decorView.getSystemUiVisibility();
+            flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            decorView.setSystemUiVisibility(flags);
         }
         
         // Shut down camera executor
         if (cameraExecutor != null) {
             cameraExecutor.shutdown();
+        }
+
+        // Release MediaPlayer resources
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
+    private void updateBatchModeUI(boolean showBatchUI) {
+        // Show/hide import containers
+        importFileContainer.setVisibility(showBatchUI ? View.GONE : View.VISIBLE);
+        importImageContainer.setVisibility(showBatchUI ? View.GONE : View.VISIBLE);
+        
+        // Show/hide batch mode containers
+        discardContainer.setVisibility(showBatchUI ? View.VISIBLE : View.GONE);
+        completeContainer.setVisibility(showBatchUI ? View.VISIBLE : View.GONE);
+        
+        // Show/hide preview container
+        previewContainer.setVisibility(showBatchUI && batchCount > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private void showDiscardConfirmationDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Discard Images")
+            .setMessage("Are you sure you want to discard all captured images?")
+            .setPositiveButton("Discard", (dialog, which) -> {
+                discardImages();
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    private void discardImages() {
+        // Reset batch state
+        resetBatchState();
+        // Update UI to show import buttons and hide batch mode buttons
+        updateBatchModeUI(false);
+        // Switch back to single mode
+        modeToggleGroup.check(R.id.radioSingle);
+        isBatchMode = false;
+        // Show feedback
+        Toast.makeText(requireContext(), "Images discarded", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (imageCapture != null) {
+            imageCapture.setTargetRotation(requireView().getDisplay().getRotation());
         }
     }
 } 

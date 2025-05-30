@@ -1,5 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Primary brand color -->
+    <color name="primary">#4CAF50</color>          <!-- Green 500 -->
+    <color name="primary_light">#81C784</color>    <!-- Green 300 -->
+    <color name="primary_dark">#388E3C</color>     <!-- Green 700 -->
+    <color name="primary_variant">#2E7D32</color>  <!-- Green 800 -->
+    
+    <!-- Secondary brand color -->
+    <color name="secondary">#66BB6A</color>        <!-- Green 400 -->
+    <color name="secondary_light">#A5D6A7</color>  <!-- Green 200 -->
+    <color name="secondary_dark">#43A047</color>   <!-- Green 600 -->
+    
+    <!-- Accent and surface colors -->
+    <color name="accent">#00C853</color>           <!-- Green A700 -->
+    <color name="surface">#FFFFFF</color>
+    <color name="background">#FAFAFA</color>
+    
+    <!-- Text and icon colors -->
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_secondary">#000000</color>
+    <color name="on_background">#000000</color>
+    <color name="on_surface">#000000</color>
+    
+    <!-- Status colors -->
+    <color name="error">#B00020</color>
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FFA000</color>
+    <color name="info">#2196F3</color>
+    
+    <!-- Common colors -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="transparent">#00000000</color>
 </resources>

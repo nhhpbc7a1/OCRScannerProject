@@ -6,55 +6,54 @@
     android:layout_height="match_parent">
 
     <!-- CameraX Preview View -->
+
+    <!-- Custom Black Toolbar -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
 
-    <!-- Custom Black Toolbar -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="48dp"
         android:background="#000000"
+        android:minHeight="48dp"
+        app:contentInsetStart="0dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <!-- Close Button -->
         <ImageButton
             android:id="@+id/btnClose"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:layout_gravity="start"
+            android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:padding="4dp"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="@android:color/white"
+            app:tint="@android:color/white"
             android:contentDescription="Close" />
-
-        <!-- Title -->
-        <TextView
-            android:id="@+id/toolbarTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="Scanner"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
 
         <!-- Flash Toggle Button -->
         <ImageButton
             android:id="@+id/btnFlash"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:layout_gravity="end"
             android:layout_marginEnd="16dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_camera"
-            android:tint="@android:color/white"
+            android:scaleType="fitCenter"
+            android:padding="4dp"
+            android:src="@drawable/ic_flash_off"
+            app:tint="@android:color/white"
             android:contentDescription="Toggle Flash" />
 
     </androidx.appcompat.widget.Toolbar>
@@ -64,30 +63,85 @@
         android:id="@+id/radioGroupMode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:singleSelection="true"
+        android:layout_marginBottom="24dp"
         app:selectionRequired="true"
-        style="?attr/materialButtonToggleGroupStyle"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:singleSelection="true"
+        app:layout_constraintBottom_toTopOf="@id/bottomToolbar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/radioSingle"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="36dp"
             android:text="Single"
-            android:checked="true"
-            style="@style/Widget.App.Button.OutlinedButton.Toggle" />
+            android:textSize="12sp"
+            android:textColor="@color/toggle_button_text_color"
+            app:strokeColor="@color/toggle_button_stroke_color"
+            app:backgroundTint="@color/toggle_button_background_tint"
+            style="?attr/materialButtonOutlinedStyle"
+            android:checked="true"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/radioBatch"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="36dp"
             android:text="Batch"
-            style="@style/Widget.App.Button.OutlinedButton.Toggle" />
+            android:textSize="12sp"
+            android:textColor="@color/toggle_button_text_color"
+            app:strokeColor="@color/toggle_button_stroke_color"
+            app:backgroundTint="@color/toggle_button_background_tint"
+            style="?attr/materialButtonOutlinedStyle"/>
 
     </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <!-- Batch Mode Preview -->
+    <FrameLayout
+        android:id="@+id/previewContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:layout_marginEnd="16dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/bottomToolbar"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:visibility="visible">
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardBatchPreview"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="9dp"
+            android:layout_marginEnd="9dp"
+            android:elevation="4dp"
+            app:cardCornerRadius="4dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardElevation="0dp"
+            app:strokeWidth="2dp"
+            app:strokeColor="#4CAF50">
+
+            <ImageView
+                android:id="@+id/imgBatchPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@android:drawable/ic_menu_report_image" />
+
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/tvBatchCount"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="end|top"
+            android:background="@drawable/batch_count_background"
+            android:gravity="center"
+            android:text="1"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:elevation="8dp"/>
+
+    </FrameLayout>
 
     <!-- Black toolbar at the bottom -->
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -95,21 +149,81 @@
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:background="#000000"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Import File Button (Left) -->
-        <ImageButton
-            android:id="@+id/btnImportFile"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+        <!-- Import File Button (Left) - Visible in Single Mode -->
+        <LinearLayout
+            android:id="@+id/importFileContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginStart="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Import File"
-            android:src="@android:drawable/ic_menu_upload"
-            android:tint="@android:color/white"
+            android:orientation="vertical"
+            android:gravity="center"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageButton
+                android:id="@+id/btnImportFile"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Import File"
+                android:scaleType="fitCenter"
+                android:padding="2dp"
+                app:srcCompat="@drawable/ic_file"
+                app:tint="@android:color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Import File"
+                android:textColor="@android:color/white"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"/>
+        </LinearLayout>
+
+        <!-- Discard Button (Left) - Visible in Batch Mode -->
+        <LinearLayout
+            android:id="@+id/discardContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageButton
+                android:id="@+id/btnDiscard"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Discard"
+                android:scaleType="fitCenter"
+                android:padding="2dp"
+                app:srcCompat="@drawable/ic_discard"
+                app:tint="@android:color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Discard"
+                android:textColor="@android:color/white"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"/>
+        </LinearLayout>
+
+        <!-- Teal Ring Around Capture Button -->
+        <View
+            android:id="@+id/capture_ring"
+            android:layout_width="62dp"
+            android:layout_height="62dp"
+            android:background="@drawable/capture_button_ring"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -119,79 +233,71 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="Capture Photo"
+            app:fabCustomSize="45dp"
+            app:maxImageSize="24dp"
+            app:shapeAppearanceOverlay="@style/CircularFAB"
             app:backgroundTint="@android:color/white"
-            app:fabSize="normal"
+            app:borderWidth="0dp"
+            app:elevation="0dp"
+            app:pressedTranslationZ="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@android:drawable/ic_menu_camera"
-            app:tint="@android:color/black" />
-
-        <!-- Import Image Button (Right) -->
-        <ImageButton
-            android:id="@+id/btnImportImage"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginEnd="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Import Image"
-            android:src="@android:drawable/ic_menu_gallery"
-            android:tint="@android:color/white"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <!-- Batch Mode Preview -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cardBatchPreview"
-        android:layout_width="60dp"
-        android:layout_height="80dp"
-        android:layout_margin="16dp"
-        android:elevation="4dp"
-        android:visibility="gone"
-        app:cardCornerRadius="4dp"
-        app:cardBackgroundColor="@android:color/transparent"
-        app:cardElevation="0dp"
-        app:strokeWidth="2dp"
-        app:strokeColor="#4CAF50"
-        app:layout_constraintBottom_toTopOf="@+id/bottomToolbar"
-        app:layout_constraintEnd_toStartOf="@+id/btnComplete"
-        app:layout_constraintTop_toTopOf="@id/btnComplete"
-        tools:visibility="visible">
-
-        <ImageView
-            android:id="@+id/imgBatchPreview"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@android:drawable/ic_menu_report_image" />
-
-        <TextView
-            android:id="@+id/tvBatchCount"
-            android:layout_width="match_parent"
+        <!-- Import Image Button (Right) - Visible in Single Mode -->
+        <LinearLayout
+            android:id="@+id/importImageContainer"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:background="#80000000"
+            android:layout_marginEnd="32dp"
+            android:orientation="vertical"
             android:gravity="center"
-            android:padding="4dp"
-            android:text="1"
-            android:textColor="@android:color/white"
-            android:textStyle="bold" />
-    </androidx.cardview.widget.CardView>
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-    <!-- Complete Button -->
-    <Button
-        android:id="@+id/btnComplete"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="Complete"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@+id/bottomToolbar"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:visibility="visible" />
+            <ImageButton
+                android:id="@+id/btnImportImage"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Import Image"
+                android:scaleType="fitCenter"
+                android:padding="2dp"
+                app:srcCompat="@drawable/ic_image"
+                app:tint="@android:color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Import Image"
+                android:textColor="@android:color/white"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"/>
+        </LinearLayout>
+
+        <!-- Complete Button (Right) - Visible in Batch Mode -->
+        <FrameLayout
+            android:id="@+id/completeContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnComplete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Complete"
+                android:textColor="@color/on_primary"
+                app:backgroundTint="@color/primary"
+                android:layout_margin="8dp"
+                app:cornerRadius="8dp" />
+        </FrameLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout> 
