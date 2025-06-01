@@ -3,9 +3,11 @@ package hcmute.edu.vn.ocrscannerproject.ui.settings;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,6 +41,8 @@ import hcmute.edu.vn.ocrscannerproject.services.AuthService;
 public class SettingsFragment extends Fragment {
     
     private static final int RC_SIGN_IN = 9001;
+    private static final String PREFS_NAME = "OCRScannerPrefs";
+    private static final String KEY_START_WITH_CAMERA = "start_with_camera";
     
     private SettingsViewModel viewModel;
     private ImageView imgUserAvatar;
@@ -60,8 +64,17 @@ public class SettingsFragment extends Fragment {
     private GoogleSignInClient googleSignInClient;
     private AuthService authService;
     
+    private SharedPreferences sharedPreferences;
+    
     public static SettingsFragment newInstance() {
         return new SettingsFragment();
+    }
+    
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        sharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
     
     @Nullable
@@ -104,6 +117,10 @@ public class SettingsFragment extends Fragment {
                 .requestEmail()
                 .build();
         googleSignInClient = GoogleSignIn.getClient(requireActivity(), gso);
+        
+        // Load saved preference
+        boolean startWithCamera = sharedPreferences.getBoolean(KEY_START_WITH_CAMERA, false);
+        switchStartWithCamera.setChecked(startWithCamera);
         
         // Set up observers
         setupObservers();
@@ -194,7 +211,12 @@ public class SettingsFragment extends Fragment {
         
         // Start with camera switch
         switchStartWithCamera.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            viewModel.setStartWithCamera(isChecked);
+            // Save the new setting
+            sharedPreferences.edit().putBoolean(KEY_START_WITH_CAMERA, isChecked).apply();
+            
+            // Show confirmation message
+            String message = isChecked ? "Camera will open on startup" : "Camera disabled on startup";
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
         });
         
         // File name format
@@ -367,5 +389,11 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
+    }
+    
+    // Method to check if start with camera is enabled
+    public static boolean shouldStartWithCamera(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getBoolean(KEY_START_WITH_CAMERA, false);
     }
 } 

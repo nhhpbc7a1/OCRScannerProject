@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -19,6 +20,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import hcmute.edu.vn.ocrscannerproject.data.SampleDataProvider;
+import hcmute.edu.vn.ocrscannerproject.ui.settings.SettingsFragment;
 
 public class MainActivity extends AppCompatActivity implements NavigationBarView.OnItemSelectedListener {
 
@@ -31,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+        Log.d("MainActivity", "savedInstanceState = " + savedInstanceState);
         // Hide default ActionBar
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
@@ -80,6 +82,14 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
             
             // Initialize sample data in background
             initializeSampleData();
+            
+            // Check if we should start with camera
+            if (savedInstanceState == null) { // Only check on first creation
+                if (SettingsFragment.shouldStartWithCamera(this)) {
+                    // Navigate to camera fragment
+                    navController.navigate(R.id.fab_camera);
+                }
+            }
             
         } catch (Exception e) {
             Log.e(TAG, "Error setting up Navigation: " + e.getMessage(), e);

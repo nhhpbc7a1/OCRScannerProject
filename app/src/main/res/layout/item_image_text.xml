@@ -3,11 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageView
+    <hcmute.edu.vn.ocrscannerproject.ui.extract.TextSelectionImageView
         android:id="@+id/image_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="fitCenter"
-        android:contentDescription="Scanned image with text recognition" />
+        android:scaleType="fitCenter"/>
 
 </FrameLayout> 

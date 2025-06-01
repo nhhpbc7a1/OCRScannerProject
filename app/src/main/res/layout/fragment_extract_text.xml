@@ -101,6 +101,24 @@
 
     </LinearLayout>
 
+    <!-- Add Translate FAB -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_translate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:backgroundTint="@android:color/white"
+        app:tint="@color/blue_500"
+        app:borderWidth="0dp"
+        app:elevation="6dp"
+        app:fabSize="normal"
+
+        app:srcCompat="@drawable/ic_translate"
+        app:layout_constraintBottom_toTopOf="@id/scroll_actions"
+        app:layout_constraintEnd_toEndOf="parent"
+
+        />
+
     <!-- Bottom actions -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/scroll_actions"

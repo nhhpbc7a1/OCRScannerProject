@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import hcmute.edu.vn.ocrscannerproject.R;
+import hcmute.edu.vn.ocrscannerproject.ui.extract.TextSelectionImageView;
 
 public class ImagePagerAdapter extends RecyclerView.Adapter<ImagePagerAdapter.ImageViewHolder> {
     private static final String TAG = "ImagePagerAdapter";
@@ -94,22 +95,17 @@ public class ImagePagerAdapter extends RecyclerView.Adapter<ImagePagerAdapter.Im
                     // Store original bitmap
                     rotatedBitmaps.put(position, bitmap);
                     
-                    // Create overlay if we have recognized text
-                    final Bitmap displayBitmap;
-                    if (recognizedTexts.containsKey(position)) {
-                        displayBitmap = createOverlayBitmap(bitmap, position);
-                        if (displayBitmap != null) {
-                            overlayBitmaps.put(position, displayBitmap);
-                        }
-                    } else {
-                        displayBitmap = bitmap;
-                    }
-                    
                     // Update UI on main thread
                     mainHandler.post(() -> {
                         if (holder.getAdapterPosition() == position) {
-                            holder.imageView.setImageBitmap(displayBitmap);
-                            setupTouchListener(holder.imageView, bitmap, position);
+                            holder.imageView.setImageBitmap(bitmap);
+                            
+                            // Set recognized text if available
+                            Text recognizedText = recognizedTexts.get(position);
+                            if (recognizedText != null) {
+                                holder.imageView.setRecognizedText(recognizedText);
+                            }
+                            
                             if (onImageLoadedListener != null) {
                                 onImageLoadedListener.onImageLoaded(position, bitmap);
                             }
@@ -134,22 +130,11 @@ public class ImagePagerAdapter extends RecyclerView.Adapter<ImagePagerAdapter.Im
         });
     }
 
-    private void setupTouchListener(ImageView imageView, Bitmap bitmap, int position) {
-        imageView.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                float scaledX = event.getX() * (float)bitmap.getWidth() / v.getWidth();
-                float scaledY = event.getY() * (float)bitmap.getHeight() / v.getHeight();
-                handleTextSelection(position, scaledX, scaledY);
-            }
-            return true;
-        });
-    }
-
     @Override
     public void onViewRecycled(@NonNull ImageViewHolder holder) {
         super.onViewRecycled(holder);
         holder.imageView.setImageBitmap(null);
-        holder.imageView.setOnTouchListener(null);
+        holder.imageView.clearSelection();
     }
 
     @Override
@@ -161,18 +146,7 @@ public class ImagePagerAdapter extends RecyclerView.Adapter<ImagePagerAdapter.Im
         Log.d(TAG, "Setting recognized text for position " + position + " with " + 
               (text != null ? text.getTextBlocks().size() : 0) + " blocks");
         recognizedTexts.put(position, text);
-        
-        // Update overlay in background
-        executor.execute(() -> {
-            Bitmap originalBitmap = rotatedBitmaps.get(position);
-            if (originalBitmap != null) {
-                Bitmap overlay = createOverlayBitmap(originalBitmap, position);
-                if (overlay != null) {
-                    overlayBitmaps.put(position, overlay);
-                    mainHandler.post(() -> notifyItemChanged(position));
-                }
-            }
-        });
+        notifyItemChanged(position);
     }
 
     private Bitmap createOverlayBitmap(Bitmap original, int position) {
@@ -249,7 +223,7 @@ public class ImagePagerAdapter extends RecyclerView.Adapter<ImagePagerAdapter.Im
     }
 
     static class ImageViewHolder extends RecyclerView.ViewHolder {
-        ImageView imageView;
+        TextSelectionImageView imageView;
 
         ImageViewHolder(@NonNull View itemView) {
             super(itemView);

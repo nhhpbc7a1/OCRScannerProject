@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_text_selection_menu"
+    android:padding="8dp">
+
+    <ImageButton
+        android:id="@+id/btn_copy"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_copy"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Copy text"
+        android:padding="8dp"/>
+
+    <ImageButton
+        android:id="@+id/btn_translate"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_translate"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Translate text"
+        android:layout_marginStart="8dp"
+        android:padding="8dp"/>
+
+    <ImageButton
+        android:id="@+id/btn_share"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_share"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Share text"
+        android:layout_marginStart="8dp"
+        android:padding="8dp"/>
+
+</LinearLayout> 

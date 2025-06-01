@@ -35,6 +35,8 @@ import com.google.mlkit.vision.text.Text;
 import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Image;
@@ -44,6 +46,8 @@ import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfWriter;
 
 import org.json.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -77,6 +81,8 @@ public class ExtractTextFragment extends Fragment {
     private static final String ANONYMOUS_USER = "anonymous";
     
     private ImageButton btnBack;
+    private FloatingActionButton fabTranslate;
+    private TextSelectionManager textSelectionManager;
     
     private ArrayList<String> processedImages = new ArrayList<>();
     private String fileName;
@@ -89,10 +95,17 @@ public class ExtractTextFragment extends Fragment {
     private int currentPage = 0;
     private String extractedText = "";
     private final Executor executor = Executors.newSingleThreadExecutor();
-    private static final String OPENAI_API_KEY =""; // Replace with your API key
-    private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String OPENAI_API_KEY = "";
+    private static final String OPENAI_API_URL = "https://models.inference.ai.azure.com";
+    private static final String MODEL = "gpt-4o";
     private final OkHttpClient client = new OkHttpClient();
     private View actionSavePdf, actionFormatText, actionSummarize;
+
+    // Add image scale and translation variables
+    private float imageScaleX = 1.0f;
+    private float imageScaleY = 1.0f;
+    private float imageTranslateX = 0f;
+    private float imageTranslateY = 0f;
 
     public static ExtractTextFragment newInstance(String[] imagePaths, String fileName) {
         ExtractTextFragment fragment = new ExtractTextFragment();
@@ -125,7 +138,7 @@ public class ExtractTextFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_extract_text, container, false);
-        
+
         // Initialize views
         viewPagerImages = view.findViewById(R.id.view_pager_images);
         tvPageIndicator = view.findViewById(R.id.tv_page_indicator);
@@ -137,15 +150,28 @@ public class ExtractTextFragment extends Fragment {
         actionFormatText = view.findViewById(R.id.action_format_text);
         actionSummarize = view.findViewById(R.id.action_summarize);
         
+        // Initialize translate button
+        fabTranslate = view.findViewById(R.id.fab_translate);
+        
         return view;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        
         setupViewPager();
         setupListeners();
+
+        // Initialize translate button
+        fabTranslate = view.findViewById(R.id.fab_translate);
+        fabTranslate.setOnClickListener(v -> translateText());
+        
+        // Add translate button to TextSelectionManager's parent view
+        if (textSelectionManager != null) {
+            ViewGroup parent = (ViewGroup) view;
+            parent.addView(textSelectionManager.getTranslateButton());
+        }
 
         // Hide bottom navigation
         if (getActivity() instanceof MainActivity) {
@@ -191,6 +217,12 @@ public class ExtractTextFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         
+        // Remove translate button from view
+        if (textSelectionManager != null) {
+            ViewGroup parent = (ViewGroup) requireView();
+            parent.removeView(textSelectionManager.getTranslateButton());
+        }
+        
         // Show bottom navigation when leaving fragment
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).showBottomNav();
@@ -221,6 +253,23 @@ public class ExtractTextFragment extends Fragment {
         adapter.setOnImageLoadedListener((position, bitmap) -> {
             // Only perform OCR if we haven't already processed this position
             if (adapter.getRecognizedText(position) == null) {
+                // Calculate image scale and translation
+                float viewWidth = viewPagerImages.getWidth();
+                float viewHeight = viewPagerImages.getHeight();
+                float imageWidth = bitmap.getWidth();
+                float imageHeight = bitmap.getHeight();
+
+                // Calculate scaling to fit the image in the view while maintaining aspect ratio
+                imageScaleX = viewWidth / imageWidth;
+                imageScaleY = viewHeight / imageHeight;
+                float scale = Math.min(imageScaleX, imageScaleY);
+                imageScaleX = scale;
+                imageScaleY = scale;
+
+                // Calculate translation to center the image
+                imageTranslateX = (viewWidth - imageWidth * scale) / 2;
+                imageTranslateY = (viewHeight - imageHeight * scale) / 2;
+
                 // Perform OCR on the bitmap
                 InputImage image = InputImage.fromBitmap(bitmap, 0);
             
@@ -231,6 +280,22 @@ public class ExtractTextFragment extends Fragment {
                         adapter.setRecognizedText(position, text);
                             // Store the extracted text
                             extractedText = text.getText();
+                            
+                            // Initialize TextSelectionManager after text recognition
+                            if (textSelectionManager == null) {
+                                textSelectionManager = new TextSelectionManager(
+                                    requireContext(),
+                                    text.getTextBlocks(),
+                                    imageScaleX,
+                                    imageScaleY,
+                                    imageTranslateX,
+                                    imageTranslateY
+                                );
+                                
+                                // Add translate button to view
+                                ViewGroup parent = (ViewGroup) requireView();
+                                parent.addView(textSelectionManager.getTranslateButton());
+                        }
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -483,7 +548,7 @@ public class ExtractTextFragment extends Fragment {
                             String errorMessage;
                             if (e.getMessage().contains("Rate limit exceeded")) {
                                 errorMessage = "The service is currently experiencing high demand.\nPlease try again in a few minutes.";
-                            } else {
+        } else {
                                 errorMessage = "Failed to format text: " + e.getMessage();
                             }
                             showErrorDialog("Format Error", errorMessage);
@@ -533,42 +598,57 @@ public class ExtractTextFragment extends Fragment {
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         JSONObject requestBody = new JSONObject();
         try {
-            requestBody.put("model", "gpt-3.5-turbo");
-            JSONObject message = new JSONObject();
-            message.put("role", "user");
-            message.put("content", prompt);
-            requestBody.put("messages", new JSONObject[]{message});
-        } catch (Exception e) {
-            throw new IOException("Failed to create request body: " + e.getMessage());
-        }
-
-        Request request = new Request.Builder()
-            .url(OPENAI_API_URL)
-            .addHeader("Authorization", "Bearer " + OPENAI_API_KEY)
-            .post(RequestBody.create(requestBody.toString(), JSON))
-            .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            if (response.code() == 429) {
-                throw new IOException("Rate limit exceeded");
-            }
+            // Tạo messages array
+            JSONArray messages = new JSONArray();
             
-            if (!response.isSuccessful()) {
-                throw new IOException("Unexpected response: " + response);
-            }
+            // Thêm system message
+            JSONObject systemMessage = new JSONObject();
+            systemMessage.put("role", "system");
+            systemMessage.put("content", "You are a helpful assistant that formats and cleans up OCR text. Make the text more readable and well-structured.");
+            messages.put(systemMessage);
             
-            String responseBody = response.body().string();
-            JSONObject jsonResponse = new JSONObject(responseBody);
-            return jsonResponse.getJSONArray("choices")
-                .getJSONObject(0)
-                .getJSONObject("message")
-                .getString("content");
+            // Thêm user message
+            JSONObject userMessage = new JSONObject();
+            userMessage.put("role", "user");
+            userMessage.put("content", prompt);
+            messages.put(userMessage);
+            
+            // Tạo request body chính xác như marketplace example
+            requestBody.put("messages", messages);
+            requestBody.put("model", MODEL);
+            requestBody.put("temperature", 0.7);
+            requestBody.put("top_p", 0.95);
+            requestBody.put("max_tokens", 16384);
+            requestBody.put("stream", false);
+
+            // Build request với path chính xác
+            String fullUrl = OPENAI_API_URL + "/chat/completions";
+            Request request = new Request.Builder()
+                .url(fullUrl)
+                .addHeader("Authorization", "Bearer " + OPENAI_API_KEY)
+                .addHeader("Content-Type", "application/json")
+                .post(RequestBody.create(requestBody.toString(), JSON))
+                .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    String errorBody = response.body() != null ? response.body().string() : "Unknown error";
+                    Log.e("API_ERROR", "Error response: " + errorBody);
+                    throw new IOException("Unexpected response: " + response + "\nError body: " + errorBody);
+                }
                 
-        } catch (Exception e) {
-            if (e instanceof IOException) {
-                throw (IOException) e;
+                String responseBody = response.body().string();
+                Log.d("API_RESPONSE", "Response: " + responseBody);
+                
+                JSONObject jsonResponse = new JSONObject(responseBody);
+                return jsonResponse.getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .getString("content");
             }
-            throw new IOException("Failed to process OpenAI response: " + e.getMessage());
+        } catch (JSONException e) {
+            Log.e("API_ERROR", "JSON error: " + e.getMessage());
+            throw new IOException("Failed to process request/response: " + e.getMessage());
         }
     }
 
@@ -750,5 +830,85 @@ public class ExtractTextFragment extends Fragment {
         });
 
         dialog.show();
+    }
+
+    private void translateText() {
+        // Get all extracted text from all pages
+        StringBuilder allText = new StringBuilder();
+        for (int i = 0; i < processedImages.size(); i++) {
+            Text recognizedText = adapter.getRecognizedText(i);
+            if (recognizedText != null) {
+                if (i > 0) allText.append("\n\n");
+                allText.append(recognizedText.getText());
+            }
+        }
+
+        String textToTranslate = allText.toString().trim();
+        if (textToTranslate.isEmpty()) {
+            Toast.makeText(getContext(), "No text to translate", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show loading dialog
+        Dialog loadingDialog = new Dialog(requireContext());
+        loadingDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        loadingDialog.setContentView(R.layout.dialog_loading);
+        loadingDialog.setCancelable(false);
+        if (loadingDialog.getWindow() != null) {
+            loadingDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        final TextView loadingText = loadingDialog.findViewById(R.id.loading_text);
+        loadingText.setText("Translating...");
+        loadingDialog.show();
+
+        executor.execute(() -> {
+            final int MAX_ATTEMPTS = 3;
+            final long BASE_DELAY = 2000; // Start with 2 seconds
+            
+            for (int currentAttempt = 0; currentAttempt < MAX_ATTEMPTS; currentAttempt++) {
+                try {
+                    if (currentAttempt > 0) {
+                        // Update loading message to show retry attempt
+                        final int attemptNumber = currentAttempt + 1;
+                        getActivity().runOnUiThread(() -> {
+                            loadingText.setText("Service is busy. Retrying... (" + attemptNumber + "/" + MAX_ATTEMPTS + ")");
+                        });
+                        Thread.sleep(BASE_DELAY * (1L << currentAttempt)); // Exponential backoff
+                    }
+
+                    String prompt = "Translate the following text to English. Keep the formatting and structure. If the text is already in English, improve its grammar and clarity:\n\n" + textToTranslate;
+                    String translatedText = callOpenAI(prompt);
+                    
+                    getActivity().runOnUiThread(() -> {
+                        loadingDialog.dismiss();
+                        showEditableResultDialog("Translated Text", translatedText);
+                    });
+                    return; // Success, exit the retry loop
+                    
+                } catch (IOException e) {
+                    if (currentAttempt >= MAX_ATTEMPTS - 1 || !e.getMessage().contains("Rate limit exceeded")) {
+                        e.printStackTrace();
+                        getActivity().runOnUiThread(() -> {
+                            loadingDialog.dismiss();
+                            String errorMessage;
+                            if (e.getMessage().contains("Rate limit exceeded")) {
+                                errorMessage = "The service is currently experiencing high demand.\nPlease try again in a few minutes.";
+                            } else {
+                                errorMessage = "Failed to translate text: " + e.getMessage();
+                            }
+                            showErrorDialog("Translation Error", errorMessage);
+                        });
+                        return;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    getActivity().runOnUiThread(() -> {
+                        loadingDialog.dismiss();
+                        showErrorDialog("Error", "An unexpected error occurred while translating the text.");
+                    });
+                    return;
+                }
+            }
+        });
     }
 } 
